@@ -20,6 +20,6 @@ Can dependency-aware causal root-cause analysis combined with confidence-aware, 
 🚧 Under Development
 
 ### Author
-CHANDAN P
-M.Tech, Computer Networking and Engineering
-Ramaiah Institute of Technology
+- CHANDAN P
+- M.Tech, Computer Networking and Engineering
+- Ramaiah Institute of Technology
