@@ -13,13 +13,13 @@ An autonomous cloud-native incident management and self-healing system for Kuber
 - Post-recovery verification
 - Feedback and learning
 
-### Research Question
-Can dependency-aware causal root-cause analysis combined with confidence-aware, safely validated automated recovery reduce MTTR and incorrect remediation in Kubernetes microservice failures?
+<!-- ### Research Question
+Can dependency-aware causal root-cause analysis combined with confidence-aware, safely validated automated recovery reduce MTTR and incorrect remediation in Kubernetes microservice failures? -->
 
 ### Status
 🚧 Under Development
 
 ### Author
-[Your Name]
-M.Tech, [Your Department]
-[Your University]
+CHANDAN P
+M.Tech, Computer Networking and Engineering
+Ramaiah Institute of Technology
