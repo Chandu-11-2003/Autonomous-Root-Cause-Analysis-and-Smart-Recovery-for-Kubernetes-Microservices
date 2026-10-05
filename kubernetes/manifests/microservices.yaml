@@ -1,0 +1,441 @@
+---
+# ============================================
+# CONFIGMAP: Shared environment configuration
+# ============================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: prod
+data:
+  DB_HOST: "database"
+  DB_PORT: "5432"
+  DB_NAME: "ecommerce"
+  DB_USER: "postgres"
+  USE_SQLITE: "false"
+  USER_SVC_URL: "http://user-service:8001"
+  PRODUCT_SVC_URL: "http://product-service:8002"
+  PAYMENT_SVC_URL: "http://payment-service:8003"
+  ORDER_SVC_URL: "http://order-service:8004"
+  GATEWAY_URL: "http://api-gateway:8000"
+
+---
+# ============================================
+# USER SERVICE
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: prod
+  labels:
+    app: user-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: user-service
+        image: kube-rca/user-service:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: app-config
+        env:
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: prod
+spec:
+  selector:
+    app: user-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP
+
+---
+# ============================================
+# PRODUCT SERVICE
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: prod
+  labels:
+    app: product-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8002"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: product-service
+        image: kube-rca/product-service:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8002
+        envFrom:
+        - configMapRef:
+            name: app-config
+        env:
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8002
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: prod
+spec:
+  selector:
+    app: product-service
+  ports:
+  - port: 8002
+    targetPort: 8002
+  type: ClusterIP
+
+---
+# ============================================
+# PAYMENT SERVICE
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: prod
+  labels:
+    app: payment-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8003"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: payment-service
+        image: kube-rca/payment-service:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8003
+        envFrom:
+        - configMapRef:
+            name: app-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: prod
+spec:
+  selector:
+    app: payment-service
+  ports:
+  - port: 8003
+    targetPort: 8003
+  type: ClusterIP
+
+---
+# ============================================
+# ORDER SERVICE
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: prod
+  labels:
+    app: order-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8004"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: order-service
+        image: kube-rca/order-service:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8004
+        envFrom:
+        - configMapRef:
+            name: app-config
+        env:
+        - name: DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8004
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8004
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: prod
+spec:
+  selector:
+    app: order-service
+  ports:
+  - port: 8004
+    targetPort: 8004
+  type: ClusterIP
+
+---
+# ============================================
+# API GATEWAY
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: prod
+  labels:
+    app: api-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: api-gateway
+        image: kube-rca/api-gateway:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: app-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: prod
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+
+---
+# ============================================
+# FRONTEND SERVICE
+# ============================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: prod
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: frontend
+        image: kube-rca/frontend:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: app-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: prod
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080
+  type: NodePort

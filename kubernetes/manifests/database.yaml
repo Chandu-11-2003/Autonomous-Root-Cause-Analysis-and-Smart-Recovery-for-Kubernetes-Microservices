@@ -1,0 +1,150 @@
+---
+# Secret for database password
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+  namespace: prod
+type: Opaque
+data:
+  POSTGRES_PASSWORD: cG9zdGdyZXM=
+  # "postgres" in base64
+
+---
+# ConfigMap for database initialization SQL
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-script
+  namespace: prod
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        balance NUMERIC(10, 2) DEFAULT 1000.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS products (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price NUMERIC(10, 2) NOT NULL,
+        stock INT NOT NULL DEFAULT 100,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        total_amount NUMERIC(10, 2) NOT NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+        trace_id VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    INSERT INTO users (username, email, balance) VALUES
+    ('alice', 'alice@example.com', 500.00),
+    ('bob', 'bob@example.com', 1200.00),
+    ('charlie', 'charlie@example.com', 50.00)
+    ON CONFLICT (username) DO NOTHING;
+    INSERT INTO products (name, description, price, stock) VALUES
+    ('Cloud Native Laptop', 'High performance laptop for K8s dev', 999.99, 25),
+    ('Kubernetes Action Figure', 'Collectible figurine with Helm cape', 24.99, 150),
+    ('Observability Mug', 'Coffee mug with RED metrics graph', 14.50, 80),
+    ('Reliability Book', 'Guide to Site Reliability Engineering', 45.00, 200)
+    ON CONFLICT DO NOTHING;
+
+---
+# Persistent Volume Claim for database storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: prod
+  labels:
+    app: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: ecommerce
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d/
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      - name: init-script
+        configMap:
+          name: db-init-script
+
+---
+# PostgreSQL Service (internal DNS: database.prod.svc.cluster.local)
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+  namespace: prod
+spec:
+  selector:
+    app: database
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP

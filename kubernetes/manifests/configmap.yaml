@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: prod
+data:
+  DB_HOST: "database"
+  DB_PORT: "5432"
+  DB_NAME: "ecommerce"
+  DB_USER: "postgres"
+  USE_SQLITE: "false"
+  USER_SVC_URL: "http://user-service:8001"
+  PRODUCT_SVC_URL: "http://product-service:8002"
+  PAYMENT_SVC_URL: "http://payment-service:8003"
+  ORDER_SVC_URL: "http://order-service:8004"
+  GATEWAY_URL: "http://api-gateway:8000"

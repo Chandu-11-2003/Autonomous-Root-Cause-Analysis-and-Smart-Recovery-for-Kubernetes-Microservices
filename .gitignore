@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Kubernetes
+*.kubeconfig
+
+# Data
+*.db
+*.sqlite3
+
+# Experiment results (large files)
+experiments/results/*.csv
+experiments/results/*.png
+experiments/results/*.json
+
+# Node modules (if React dashboard)
+node_modules/

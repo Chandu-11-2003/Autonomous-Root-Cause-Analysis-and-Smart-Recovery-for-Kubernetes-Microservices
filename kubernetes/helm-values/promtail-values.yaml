@@ -1,0 +1,16 @@
+config:
+  clients:
+    - url: http://loki:3100/loki/api/v1/push
+  snippets:
+    pipelineStages:
+      - json:
+          expressions:
+            level: levelname
+            service: name
+            trace_id: trace_id
+            span_id: span_id
+            duration: duration_ms
+      - labels:
+          level:
+          service:
+          trace_id:
